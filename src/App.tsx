@@ -1,6 +1,5 @@
 import { GPU } from "gpu.js";
 import { ChangeEventHandler, useEffect, useRef, useState } from "react";
-import "./App.css";
 import Controls from "./components/controls";
 import Legend from "./components/legend";
 import { getDirectionalColor } from "./utils";

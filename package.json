@@ -3,6 +3,7 @@
   "private": true,
   "version": "0.0.0",
   "scripts": {
+    "vercel-build": "yum install libx11 libxext && npm run build",
     "dev": "vite",
     "build": "tsc && vite build",
     "preview": "vite preview"

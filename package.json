@@ -3,7 +3,7 @@
   "private": true,
   "version": "0.0.0",
   "scripts": {
-    "vercel-build": "npm install -g node-gyp && yum install glibc && npm run build",
+    "vercel-build": "yum install libuuid-devel libmount-devel && npm run build",
     "dev": "vite",
     "build": "tsc && vite build",
     "preview": "vite preview"

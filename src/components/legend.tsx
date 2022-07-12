@@ -22,7 +22,7 @@ export default function Legend() {
   return (
     <div className="m-4">
       <div className="m-4 p-1 bg-sky-600 hover:bg-sky-700 hover:cursor-pointer text-white text-center rounded-lg">
-        <a href="https://github.com/anselbrandt/vite-canvas" target="_blank">
+        <a href="https://github.com/anselbrandt/vite-optical-flow" target="_blank">
           About
         </a>
       </div>

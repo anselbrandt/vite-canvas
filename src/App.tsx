@@ -1,6 +1,8 @@
 import { GPU } from "gpu.js";
-import { useEffect, useRef, useState } from "react";
+import { ChangeEventHandler, useEffect, useRef, useState } from "react";
 import "./App.css";
+import Controls from "./components/controls";
+import Legend from "./components/legend";
 import { getDirectionalColor } from "./utils";
 
 function App() {
@@ -9,15 +11,53 @@ function App() {
   const timestamp = useRef<number>(0);
   const lastPixels = useRef<Uint8ClampedArray>();
   const [size, setSize] = useState({ width: 640, height: 480 });
+  const qualityRef = useRef(10);
   const [quality, setQuality] = useState(10);
+  const transparencyRef = useRef(1);
   const [transparency, setTransparency] = useState(1);
+  const maxFlowRef = useRef(100);
   const [maxFlow, setMaxFlow] = useState(100);
+  const minFlowRef = useRef(0);
   const [minFlow, setMinFlow] = useState(0);
+  const monochromeRef = useRef(false);
+  const [monochrome, setMonochrome] = useState(false);
+  const histogramRef = useRef(true);
+  const [histogram, setHistogram] = useState(true);
+  const zonesRef = useRef<Float32Array[]>();
+  const [zonesLength, setZonesLength] = useState<number>();
+
+  const handleQuality: ChangeEventHandler<HTMLInputElement> = (event) => {
+    qualityRef.current = +event.target.value;
+    setQuality(+event.target.value);
+  };
+
+  const handleMaxFlow: ChangeEventHandler<HTMLInputElement> = (event) => {
+    maxFlowRef.current = +event.target.value;
+    setMaxFlow(+event.target.value);
+  };
+
+  const handleMinFlow: ChangeEventHandler<HTMLInputElement> = (event) => {
+    minFlowRef.current = +event.target.value;
+    setMinFlow(+event.target.value);
+  };
+
+  const handleTransparency: ChangeEventHandler<HTMLInputElement> = (event) => {
+    transparencyRef.current = +event.target.value / 100;
+    setTransparency(+event.target.value / 100);
+  };
+
+  const handleMonochrome = () => {
+    monochromeRef.current = !monochrome;
+    setMonochrome(!monochrome);
+  };
+  const handleHistogram = () => {
+    histogramRef.current = !histogram;
+    setHistogram(!histogram);
+  };
 
   useEffect(() => {
     if (!video) return;
     if (!canvas) return;
-
     function zonesGenerator(width: number, height: number, quality: number) {
       let zones = [];
       for (let y = 0; y < height; y += quality) {
@@ -33,11 +73,18 @@ function App() {
       return zones;
     }
 
-    const zones = zonesGenerator(size.width, size.height, quality);
+    zonesRef.current = zonesGenerator(
+      size.width,
+      size.height,
+      qualityRef.current
+    );
+
+    setZonesLength(zonesRef.current.length);
 
     const gpu = new GPU({});
 
     const render = (current: number) => {
+      if (!zonesRef.current) return;
       timestamp.current = current;
       canvas.width = video.videoWidth;
       canvas.height = video.videoHeight;
@@ -111,20 +158,20 @@ function App() {
         }`;
         const kernel = gpu
           .createKernel(kernelFunction as any)
-          .setOutput([zones.length])
+          .setOutput([zonesRef.current.length])
           .setTactic("balanced");
 
         const flow = kernel(
           lastPixels.current,
           pixels,
-          zones,
+          zonesRef.current,
           quality,
           canvas.width
         ) as [];
 
         context.beginPath();
         context.rect(0, 0, canvas.width, canvas.height);
-        context.fillStyle = `rgba(0, 0, 0, ${transparency})`;
+        context.fillStyle = `rgba(0, 0, 0, ${transparencyRef.current})`;
         context.fill();
 
         let scalers = Array(size.width).fill(0);
@@ -137,23 +184,31 @@ function App() {
           const v = zone[3];
           const scaler = Math.sqrt(u * u + v * v);
 
-          if (scaler < maxFlow && scaler > minFlow) {
-            context.strokeStyle = getDirectionalColor(u, v);
+          if (scaler < maxFlowRef.current && scaler > minFlowRef.current) {
+            if (monochromeRef.current === true) {
+              context.strokeStyle = "#FF6347";
+            } else {
+              context.strokeStyle = getDirectionalColor(u, v);
+            }
+
             context.beginPath();
             context.moveTo(x, y);
             context.lineTo(x - u, y + v);
             context.stroke();
           }
-          const index = +(
-            (canvas.width / (maxFlow - minFlow)) * scaler -
-            canvas.width / (maxFlow - minFlow)
-          ).toFixed(0);
-          scalers[index] = scalers[index] + 1;
-          context.strokeStyle = "#FF6347";
-          context.beginPath();
-          context.moveTo(index, canvas.height);
-          context.lineTo(index, canvas.height - scalers[index]);
-          context.stroke();
+          if (histogramRef.current === true) {
+            const index = +(
+              (canvas.width / (maxFlowRef.current - minFlowRef.current)) *
+                scaler -
+              canvas.width / (maxFlowRef.current - minFlowRef.current)
+            ).toFixed(0);
+            scalers[index] = scalers[index] + 1;
+            context.strokeStyle = "#FF6347";
+            context.beginPath();
+            context.moveTo(index, canvas.height);
+            context.lineTo(index, canvas.height - scalers[index]);
+            context.stroke();
+          }
         }
         gpu.destroy();
         kernel.destroy();
@@ -169,10 +224,20 @@ function App() {
         cancelAnimationFrame(timestamp.current);
       });
     };
-  }, [video, canvas, size, quality, minFlow, maxFlow, transparency]);
+  }, [
+    video,
+    canvas,
+    size,
+    quality,
+    minFlow,
+    maxFlow,
+    transparency,
+    monochrome,
+    histogram,
+  ]);
 
   return (
-    <div className="w-screen h-screen flex flex-col items-center justify-center">
+    <div className="w-screen mt-10 flex flex-col items-center justify-center">
       <div>
         <video
           ref={setVideoRef}
@@ -187,6 +252,24 @@ function App() {
       </div>
       <div>
         <canvas ref={setCanvasRef} />
+      </div>
+      <div className="m-4">Flow Points {zonesLength}</div>
+      <div className="flex">
+        <Controls
+          quality={quality}
+          maxFlow={maxFlow}
+          minFlow={minFlow}
+          transparency={transparency}
+          monochrome={monochrome}
+          histogram={histogram}
+          handleQuality={handleQuality}
+          handleMaxFlow={handleMaxFlow}
+          handleMinFlow={handleMinFlow}
+          handleTransparency={handleTransparency}
+          handleMonochrome={handleMonochrome}
+          handleHistogram={handleHistogram}
+        />
+        <Legend />
       </div>
     </div>
   );

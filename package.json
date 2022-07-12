@@ -3,7 +3,7 @@
   "private": true,
   "version": "0.0.0",
   "scripts": {
-    "vercel-build": "yum install glibc-2.35 && npm run build",
+    "vercel-build": "yum install glibc-2.27 && npm run build",
     "dev": "vite",
     "build": "tsc && vite build",
     "preview": "vite preview"

@@ -20,8 +20,15 @@ export default function Legend() {
   }, []);
 
   return (
-    <div className="mt-16 ml-4">
-      <canvas ref={legendRef} width="100px" height="100px"></canvas>
+    <div className="m-4">
+      <div className="m-4 p-1 bg-sky-600 hover:bg-sky-700 hover:cursor-pointer text-white text-center rounded-lg">
+        <a href="https://github.com/anselbrandt/vite-canvas" target="_blank">
+          About
+        </a>
+      </div>
+      <div>
+        <canvas ref={legendRef} width="100px" height="100px"></canvas>
+      </div>
     </div>
   );
 }

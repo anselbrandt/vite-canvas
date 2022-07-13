@@ -4,6 +4,7 @@ import Controls from "./components/controls";
 import Legend from "./components/legend";
 import { getDirectionalColor } from "./utils";
 import { generateZones, kernelFunction } from "./utils/flow";
+// import * as d3 from 'd3'
 
 function App() {
   const [video, setVideoRef] = useState<HTMLVideoElement | null>(null);
@@ -25,7 +26,6 @@ function App() {
   const [histogram, setHistogram] = useState(true);
   const zonesRef = useRef<Float32Array[]>();
   const [zonesLength, setZonesLength] = useState<number>();
-  const [data, setData] = useState<number[]>();
   const chartRef = useRef<HTMLCanvasElement>(null);
 
   const handleQuality: ChangeEventHandler<HTMLInputElement> = (event) => {
@@ -137,6 +137,7 @@ function App() {
             context.stroke();
           }
 
+          // filter min/max flow values
           if (histogramRef.current === true) {
             const index = +(
               (canvas.width / (maxFlowRef.current - minFlowRef.current)) *
@@ -151,10 +152,39 @@ function App() {
             context.lineTo(index, canvas.height - scalers[index]);
             context.stroke();
           }
+          // end histogram
         }
-        setData(scalers);
-        gpu.destroy();
+        // draw histogram
+        const data = scalers
+          .filter((v) => typeof v === "number")
+          .map((v, i) => [i, size.height - v]) as [number, number][];
 
+        // draw to canvas out of loop
+        // for (let point of data) {
+        //   if (point) {
+        //     const [index, value] = point;
+        //     context.strokeStyle = "#FF6347";
+        //     context.beginPath();
+        //     context.moveTo(index, canvas.height);
+        //     context.lineTo(index, canvas.height - value);
+        //     context.stroke();
+        //   }
+        // }
+
+        // draw to canvas with d3
+        // if (data) {
+        //   const line = d3
+        //     .line()
+        //     .curve(d3.curveBundle.beta(0.5))
+        //     .context(context);
+        //   context.strokeStyle = "#FF6347";
+        //   context.beginPath();
+        //   line(data);
+        //   context.stroke();
+        // }
+
+        // cleanup
+        gpu.destroy();
         kernel.destroy();
       }
       lastPixels.current = pixels;

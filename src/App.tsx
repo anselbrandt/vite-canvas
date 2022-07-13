@@ -25,9 +25,8 @@ function App() {
   const [histogram, setHistogram] = useState(true);
   const zonesRef = useRef<Float32Array[]>();
   const [zonesLength, setZonesLength] = useState<number>();
-  const [data, setData] = useState<any[]>();
+  const [data, setData] = useState<number[]>();
   const chartRef = useRef<HTMLCanvasElement>(null);
-  const chartTimestamp = useRef(0);
 
   const handleQuality: ChangeEventHandler<HTMLInputElement> = (event) => {
     qualityRef.current = +event.target.value;
@@ -182,30 +181,6 @@ function App() {
     monochrome,
     histogram,
   ]);
-
-  useEffect(() => {
-    const render = (current: number) => {
-      if (!chartRef.current) return;
-      if (!data) return;
-      chartTimestamp.current = current;
-      const canvas = chartRef.current;
-      canvas.width = size.width;
-      canvas.height = size.height;
-      const context = canvas.getContext("2d");
-      if (!context) return;
-      context.strokeStyle = "#FF6347";
-      context.beginPath();
-      let index = 0;
-      for (let count of data) {
-        context.moveTo(index, canvas.height);
-        context.lineTo(index, canvas.height - count);
-        context.stroke();
-        index++;
-      }
-    };
-    requestAnimationFrame(render);
-    return () => cancelAnimationFrame(chartTimestamp.current);
-  }, [data]);
 
   return (
     <div className="w-screen mt-10 flex flex-col items-center justify-center">

@@ -26,7 +26,6 @@ function App() {
   const zonesRef = useRef<Float32Array[]>();
   const [zonesLength, setZonesLength] = useState<number>();
   const [data, setData] = useState<any[]>();
-  const [hasPrinted, setHasPrinted] = useState(false);
   const chartRef = useRef<HTMLCanvasElement>(null);
   const chartTimestamp = useRef(0);
 
@@ -184,21 +183,14 @@ function App() {
     histogram,
   ]);
 
-  // useEffect(() => {
-  //   if (!data || hasPrinted) return;
-  //   // histogram values
-  //   console.log(data);
-  //   setHasPrinted(true);
-  // }, [data, hasPrinted]);
-
   useEffect(() => {
     const render = (current: number) => {
       if (!chartRef.current) return;
+      if (!data) return;
       chartTimestamp.current = current;
       const canvas = chartRef.current;
       canvas.width = size.width;
       canvas.height = size.height;
-      if (!data) return;
       const context = canvas.getContext("2d");
       if (!context) return;
       context.strokeStyle = "#FF6347";

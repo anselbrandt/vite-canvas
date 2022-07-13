@@ -26,7 +26,6 @@ function App() {
   const [histogram, setHistogram] = useState(true);
   const zonesRef = useRef<Float32Array[]>();
   const [zonesLength, setZonesLength] = useState<number>();
-  const chartRef = useRef<HTMLCanvasElement>(null);
 
   const handleQuality: ChangeEventHandler<HTMLInputElement> = (event) => {
     qualityRef.current = +event.target.value;
@@ -154,10 +153,10 @@ function App() {
           }
           // end histogram
         }
-        // draw histogram
-        const data = scalers
-          .filter((v) => typeof v === "number")
-          .map((v, i) => [i, size.height - v]) as [number, number][];
+        // draw histogram comment out below for out of loop or d3 draw
+        // const data = scalers
+        //   .filter((v) => typeof v === "number")
+        //   .map((v, i) => [i, size.height - v]) as [number, number][];
 
         // draw to canvas out of loop
         // for (let point of data) {
@@ -228,9 +227,6 @@ function App() {
       </div>
       <div>
         <canvas ref={setCanvasRef} />
-      </div>
-      <div>
-        <canvas ref={chartRef} />
       </div>
       <div className="m-4">Flow Points {zonesLength}</div>
       <div className="flex">

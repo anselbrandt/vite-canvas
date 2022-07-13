@@ -4,6 +4,7 @@ import Controls from "./components/controls";
 import Legend from "./components/legend";
 import { getDirectionalColor } from "./utils";
 import { generateZones, kernelFunction } from "./utils/flow";
+
 function App() {
   const [video, setVideoRef] = useState<HTMLVideoElement | null>(null);
   const [canvas, setCanvasRef] = useState<HTMLCanvasElement | null>(null);
@@ -24,6 +25,10 @@ function App() {
   const [histogram, setHistogram] = useState(true);
   const zonesRef = useRef<Float32Array[]>();
   const [zonesLength, setZonesLength] = useState<number>();
+  const [data, setData] = useState<any[]>();
+  const [hasPrinted, setHasPrinted] = useState(false);
+  const chartRef = useRef<HTMLCanvasElement>(null);
+  const chartTimestamp = useRef(0);
 
   const handleQuality: ChangeEventHandler<HTMLInputElement> = (event) => {
     qualityRef.current = +event.target.value;
@@ -70,6 +75,7 @@ function App() {
 
     const render = (current: number) => {
       if (!zonesRef.current) return;
+
       timestamp.current = current;
       canvas.width = video.videoWidth;
       canvas.height = video.videoHeight;
@@ -86,7 +92,9 @@ function App() {
         canvas.width,
         canvas.height
       );
+
       const image = context?.getImageData(0, 0, canvas.width, canvas.height);
+
       const pixels = image?.data;
 
       if (pixels && lastPixels.current && context) {
@@ -130,6 +138,7 @@ function App() {
             context.lineTo(x - u, y + v);
             context.stroke();
           }
+
           if (histogramRef.current === true) {
             const index = +(
               (canvas.width / (maxFlowRef.current - minFlowRef.current)) *
@@ -137,6 +146,7 @@ function App() {
               canvas.width / (maxFlowRef.current - minFlowRef.current)
             ).toFixed(0);
             scalers[index] = scalers[index] + 1;
+            // draw histogram
             context.strokeStyle = "#FF6347";
             context.beginPath();
             context.moveTo(index, canvas.height);
@@ -144,12 +154,16 @@ function App() {
             context.stroke();
           }
         }
+        setData(scalers);
         gpu.destroy();
+
         kernel.destroy();
       }
       lastPixels.current = pixels;
+
       requestAnimationFrame(render);
     };
+
     video.addEventListener("loadeddata", () => {
       requestAnimationFrame(render);
     });
@@ -170,6 +184,37 @@ function App() {
     histogram,
   ]);
 
+  // useEffect(() => {
+  //   if (!data || hasPrinted) return;
+  //   // histogram values
+  //   console.log(data);
+  //   setHasPrinted(true);
+  // }, [data, hasPrinted]);
+
+  useEffect(() => {
+    const render = (current: number) => {
+      if (!chartRef.current) return;
+      chartTimestamp.current = current;
+      const canvas = chartRef.current;
+      canvas.width = size.width;
+      canvas.height = size.height;
+      if (!data) return;
+      const context = canvas.getContext("2d");
+      if (!context) return;
+      context.strokeStyle = "#FF6347";
+      context.beginPath();
+      let index = 0;
+      for (let count of data) {
+        context.moveTo(index, canvas.height);
+        context.lineTo(index, canvas.height - count);
+        context.stroke();
+        index++;
+      }
+    };
+    requestAnimationFrame(render);
+    return () => cancelAnimationFrame(chartTimestamp.current);
+  }, [data]);
+
   return (
     <div className="w-screen mt-10 flex flex-col items-center justify-center">
       <div>
@@ -186,6 +231,9 @@ function App() {
       </div>
       <div>
         <canvas ref={setCanvasRef} />
+      </div>
+      <div>
+        <canvas ref={chartRef} />
       </div>
       <div className="m-4">Flow Points {zonesLength}</div>
       <div className="flex">
